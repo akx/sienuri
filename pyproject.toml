@@ -1,0 +1,39 @@
+[project]
+name = "sienuri"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Aarni Koskela", email = "akx@iki.fi" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "duckdb>=1.4.1",
+    "matplotlib>=3.10.7",
+    "numpy>=2.3.4",
+    "pyarrow>=21.0.0",
+    "pycurl>=7.45.7",
+    "pyproj>=3.7.2",
+    "rasterio>=1.4.3",
+    "rich>=14.2.0",
+    "scipy>=1.16.2",
+]
+
+[project.scripts]
+sienuri = "sienuri:main"
+
+[build-system]
+requires = ["uv_build>=0.9.0,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.1",
+    "viztracer>=1.0.4",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+extend-select = ["I", "B"]

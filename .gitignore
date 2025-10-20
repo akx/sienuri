@@ -1,0 +1,10 @@
+*.egg-info
+*.gpkg
+*.parquet
+*.py[oc]
+.venv
+/data
+__pycache__/
+build/
+dist/
+wheels/
