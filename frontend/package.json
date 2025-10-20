@@ -10,8 +10,11 @@
     "prettify": "prettier --write ."
   },
   "dependencies": {
+    "maplibre-gl": "^5.9.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-map-gl": "^8.1.0",
+    "swr": "^2.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",

@@ -11,6 +11,7 @@ dependencies = [
     "duckdb>=1.4.1",
     "matplotlib>=3.10.7",
     "numpy>=2.3.4",
+    "orjson>=3.11.3",
     "pyarrow>=21.0.0",
     "pycurl>=7.45.7",
     "pyproj>=3.7.2",
