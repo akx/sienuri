@@ -1,3 +1,4 @@
+*.duckdb
 *.egg-info
 *.gpkg
 *.parquet
@@ -7,4 +8,5 @@
 __pycache__/
 build/
 dist/
+node_modules/
 wheels/

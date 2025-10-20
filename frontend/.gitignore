@@ -1,0 +1,12 @@
+*.local
+*.log*
+*.njsproj
+*.ntvs*
+*.sln
+*.suo
+*.sw?
+.DS_Store
+.idea
+/dist*
+logs
+node_modules
