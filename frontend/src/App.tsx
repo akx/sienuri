@@ -5,6 +5,9 @@ import type { MapRef } from "react-map-gl/maplibre";
 import Map, { Layer, Marker, Source } from "react-map-gl/maplibre";
 import useSWR from "swr";
 
+import { useAtom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
+
 const initCoords = {
   longitude: 22.61,
   latitude: 60.36,
@@ -53,9 +56,15 @@ const fetcher = async (url: string): Promise<TopoPoint[]> => {
   }));
 };
 
+const darkModeAtom = atomWithStorage("darkMode", false);
+
 export function App() {
   const mapRef = useRef<MapRef>(null);
   const [bounds, setBounds] = useState<Bounds | null>(null);
+  const [darkMode, setDarkMode] = useAtom(darkModeAtom);
+  const mapStyle = darkMode
+    ? "https://tiles.openfreemap.org/styles/dark"
+    : "https://tiles.openfreemap.org/styles/liberty";
 
   const buildQueryUrl = useCallback((bounds: Bounds) => {
     const { west, south, east, north } = bounds;
@@ -112,12 +121,12 @@ export function App() {
   );
 
   return (
-    <div style={{ width: "100vw", height: "100vh" }}>
+    <>
       <Map
         ref={mapRef}
         initialViewState={initCoords}
         style={{ width: "100%", height: "100%" }}
-        mapStyle="https://tiles.openfreemap.org/styles/dark"
+        mapStyle={mapStyle}
         onLoad={updateBounds}
         onMoveEnd={updateBounds}
       >
@@ -197,6 +206,16 @@ export function App() {
           </Marker>
         ))}
       </Map>
-    </div>
+      <div className="absolute top-2 left-2 bg-white p-2 rounded shadow text-xs">
+        <label className="flex items-center gap-1">
+          <input
+            type="checkbox"
+            checked={darkMode}
+            onChange={(e) => setDarkMode(e.target.checked)}
+          />
+          Dark Map
+        </label>
+      </div>
+    </>
   );
 }
