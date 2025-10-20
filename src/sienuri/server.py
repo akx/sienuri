@@ -10,7 +10,10 @@ async def query_endpoint(request):
     params = request.query_params
     sql = params["sql"]
     with duckdb.connect(database="topo.duckdb", read_only=True) as con:
-        result = list(con.execute(sql).fetchall())
+        rows = list(con.execute(sql).fetchall())
+        desc = con.description
+    columns = [d[0] for d in desc]
+    result = {"columns": columns, "rows": rows}
     dat = orjson.dumps(result)
     return Response(dat, media_type="application/json")
 

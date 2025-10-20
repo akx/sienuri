@@ -1,12 +1,14 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useAtom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MapRef } from "react-map-gl/maplibre";
 import Map, { Layer, Marker, Source } from "react-map-gl/maplibre";
 import useSWR from "swr";
 
-import { useAtom } from "jotai";
-import { atomWithStorage } from "jotai/utils";
+import { queries } from "./queries.ts";
+import { Bounds, StaticMarker, TopoPoint } from "./types.ts";
 
 const initCoords = {
   longitude: 22.61,
@@ -14,76 +16,54 @@ const initCoords = {
   zoom: 12,
 };
 
-interface TopoPoint {
-  lon: number;
-  lat: number;
-  elevation: number;
-  tpi_20m: number;
-  aspect: number;
-  slope: number;
-}
-
-interface Bounds {
-  west: number;
-  south: number;
-  east: number;
-  north: number;
-}
-
-interface StaticMarker {
-  longitude: number;
-  latitude: number;
-  label?: string;
-}
-
 const staticMarkers: StaticMarker[] = [
   { longitude: 22.599_633, latitude: 60.352_711, label: "Marker 1" },
   { longitude: 22.600_385, latitude: 60.352_808, label: "Marker 1" },
   { longitude: 22.601_878, latitude: 60.353_145, label: "Marker 1" },
 ];
 
+interface QueryResult {
+  columns: string[];
+  rows: number[][];
+}
+
 const fetcher = async (url: string): Promise<TopoPoint[]> => {
   const response = await fetch(url);
   if (!response.ok) throw new Error("Failed to fetch");
-  const data: number[][] = await response.json();
-  return data.map((row) => ({
-    lon: row[0]!,
-    lat: row[1]!,
-    elevation: row[2]!,
-    tpi_20m: row[3]!,
-    aspect: row[4]!,
-    slope: row[5]!,
-  }));
+  const { rows, columns } = (await response.json()) as QueryResult;
+  return rows.map((row) =>
+    Object.fromEntries(row.map((value, index) => [columns[index], value])),
+  ) as TopoPoint[];
 };
 
 const darkModeAtom = atomWithStorage("darkMode", false);
+const queryAtom = atomWithStorage("selectedQuery", "", undefined, {
+  getOnInit: true,
+});
 
 export function App() {
   const mapRef = useRef<MapRef>(null);
   const [bounds, setBounds] = useState<Bounds | null>(null);
   const [darkMode, setDarkMode] = useAtom(darkModeAtom);
+  const [selectedQuery, setSelectedQuery] = useAtom(queryAtom);
   const mapStyle = darkMode
     ? "https://tiles.openfreemap.org/styles/dark"
     : "https://tiles.openfreemap.org/styles/liberty";
 
-  const buildQueryUrl = useCallback((bounds: Bounds) => {
-    const { west, south, east, north } = bounds;
-    const sql = `
-      SELECT lon, lat, elevation, tpi_20m, aspect, slope
-      FROM topo
-      LEFT JOIN stand ON topo.stand_id = stand.global_stand_id
-      WHERE tpi_20m < -0.3 AND tpi_20m > -3
-        AND elevation > 1
-        AND (aspect >= 315 OR aspect <= 45)
-        AND slope < 15
-        AND lon >= ${west} AND lon <= ${east}
-        AND lat >= ${south} AND lat <= ${north}
-        AND stand.maintreespecies IN (1,2,8,10,11,12,16,22,23,30)
-      ORDER BY RANDOM()
-      LIMIT 20000
-    `.trim();
-    return `/api/query?${new URLSearchParams({ sql })}`;
-  }, []);
+  useEffect(() => {
+    if (!selectedQuery) {
+      setSelectedQuery(queries[0]!.name);
+    }
+  }, [selectedQuery, setSelectedQuery]);
+
+  const buildQueryUrl = (bounds: Bounds) => {
+    const q = queries.find((query) => query.name === selectedQuery);
+    if (q) {
+      const sql = q.getSQL(bounds);
+      return `/api/query?${new URLSearchParams({ sql })}`;
+    }
+    return null;
+  };
 
   const { data: points = [] } = useSWR<TopoPoint[]>(
     bounds ? buildQueryUrl(bounds) : null,
@@ -215,6 +195,21 @@ export function App() {
           />
           Dark Map
         </label>
+        <label className="flex items-center gap-1 mt-2">
+          Query:
+          <select
+            value={selectedQuery}
+            onChange={(e) => setSelectedQuery(e.target.value)}
+            className="border border-gray-300 rounded p-1"
+          >
+            {queries.map((query) => (
+              <option key={query.name} value={query.name}>
+                {query.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="mt-2">Points: {points.length}</div>
       </div>
     </>
   );
