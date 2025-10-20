@@ -79,6 +79,7 @@ export function App() {
   const { data: points = [] } = useSWR<TopoPoint[]>(
     bounds ? buildQueryUrl(bounds) : null,
     fetcher,
+    { keepPreviousData: true },
   );
 
   const updateBounds = useCallback(() => {
@@ -116,31 +117,38 @@ export function App() {
         ref={mapRef}
         initialViewState={initCoords}
         style={{ width: "100%", height: "100%" }}
-        mapStyle="https://tiles.openfreemap.org/styles/liberty"
+        mapStyle="https://tiles.openfreemap.org/styles/dark"
         onLoad={updateBounds}
         onMoveEnd={updateBounds}
       >
         <Source id="topo-points" type="geojson" data={geojson}>
           <Layer
             id="points"
-            type="circle"
-            paint={{
-              "circle-radius": [
+            type="symbol"
+            layout={{
+              "text-font": ["Noto Sans Regular"],
+              "text-field": "↑",
+              "text-size": [
                 "interpolate",
                 ["linear"],
                 ["zoom"],
                 10,
-                2,
+                ["+", 4, ["*", ["get", "slope"], 0.3]],
                 14,
-                4,
+                ["+", 6, ["*", ["get", "slope"], 0.5]],
                 16,
-                6,
+                ["+", 8, ["*", ["get", "slope"], 0.8]],
                 18,
-                10,
+                ["+", 10, ["*", ["get", "slope"], 1.2]],
                 20,
-                18,
+                ["+", 14, ["*", ["get", "slope"], 2]],
               ],
-              "circle-color": [
+              "text-rotate": ["get", "aspect"],
+              "text-allow-overlap": true,
+              "text-ignore-placement": true,
+            }}
+            paint={{
+              "text-color": [
                 "interpolate",
                 ["linear"],
                 ["get", "elevation"],
@@ -153,7 +161,20 @@ export function App() {
                 60,
                 "#ff0000",
               ],
-              "circle-opacity": 0.7,
+              "text-opacity": 1,
+              "text-halo-color": "#00000044",
+              "text-halo-width": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                10,
+                0,
+                16,
+                0,
+                20,
+                1.5,
+              ],
+              "text-halo-blur": 1,
             }}
           />
         </Source>
