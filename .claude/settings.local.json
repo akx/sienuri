@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(duckdb /Users/akx/build/sienuri/forest/MV_L3314D.gpkg -c \"SELECT COUNT(*) as stand_count FROM stand;\")",
+      "Bash(duckdb /Users/akx/build/sienuri/topo.duckdb -c \"SELECT COUNT(*) as topo_count, MIN(x_etrs) as min_x, MAX(x_etrs) as max_x, MIN(y_etrs) as min_y, MAX(y_etrs) as max_y FROM topo;\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

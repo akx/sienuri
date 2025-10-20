@@ -6,14 +6,16 @@ import time
 
 def generate_heightmap_pq() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--input-dir", required=True)
-    ap.add_argument("--output-dir", required=True)
+    ap.add_argument("--input-dir", required=True, type=pathlib.Path)
+    ap.add_argument("--output-dir", required=True, type=pathlib.Path)
     args = ap.parse_args()
 
     jobs = []
 
-    for tiff in pathlib.Path(args.input_dir).rglob("*.tif"):
-        out_path = pathlib.Path(args.output_dir) / f"{tiff.stem}.parquet"
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+
+    for tiff in args.input_dir.rglob("*.tif"):
+        out_path = (args.output_dir) / f"{tiff.stem}.parquet"
         if not out_path.exists():
             jobs.append((tiff, out_path))
 

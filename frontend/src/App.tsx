@@ -1,6 +1,6 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { MapRef } from "react-map-gl/maplibre";
 import Map, { Layer, Marker, Source } from "react-map-gl/maplibre";
 import useSWR from "swr";
@@ -62,14 +62,16 @@ export function App() {
     const sql = `
       SELECT lon, lat, elevation, tpi_20m, aspect, slope
       FROM topo
+      LEFT JOIN stand ON topo.stand_id = stand.global_stand_id
       WHERE tpi_20m < -0.3 AND tpi_20m > -3
         AND elevation > 1
         AND (aspect >= 315 OR aspect <= 45)
         AND slope < 15
         AND lon >= ${west} AND lon <= ${east}
         AND lat >= ${south} AND lat <= ${north}
+        AND stand.maintreespecies IN (1,2,8,10,11,12,16,22,23,30)
       ORDER BY RANDOM()
-      LIMIT 10000
+      LIMIT 20000
     `.trim();
     return `/api/query?${new URLSearchParams({ sql })}`;
   }, []);
@@ -92,17 +94,21 @@ export function App() {
     });
   }, []);
 
-  const geojson = {
-    type: "FeatureCollection" as const,
-    features: points.map((point) => ({
-      type: "Feature" as const,
-      geometry: {
-        type: "Point" as const,
-        coordinates: [point.lon, point.lat],
-      },
-      properties: point,
-    })),
-  };
+  const geojson = useMemo(
+    () =>
+      ({
+        type: "FeatureCollection",
+        features: points.map((point) => ({
+          type: "Feature",
+          geometry: {
+            type: "Point",
+            coordinates: [point.lon, point.lat],
+          } satisfies GeoJSON.Point,
+          properties: point,
+        })),
+      }) satisfies GeoJSON.FeatureCollection<GeoJSON.Geometry, TopoPoint>,
+    [points],
+  );
 
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
