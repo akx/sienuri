@@ -49,18 +49,18 @@ def process_topo(source_file, *, name: str):
     return pa.table(
         {
             "name": pa.array([name] * (height * width), type=pa.string()),
-            "row": pa.array(rows_flat, type=pa.int32()),
-            "col": pa.array(cols_flat, type=pa.int32()),
-            "x_etrs": pa.array(x_etrs, type=pa.float64()),
-            "y_etrs": pa.array(y_etrs, type=pa.float64()),
+            # "row": pa.array(rows_flat, type=pa.int32()),
+            # "col": pa.array(cols_flat, type=pa.int32()),
+            "x_etrs": pa.array(x_etrs, type=pa.int32()),
+            "y_etrs": pa.array(y_etrs, type=pa.int32()),
             "lon": pa.array(lon, type=pa.float64()),
             "lat": pa.array(lat, type=pa.float64()),
             "elevation": pa.array(dem.ravel(), type=pa.float32()),
             "tpi_10m": pa.array(tpi_10m.ravel(), type=pa.float32()),
             "tpi_20m": pa.array(tpi_20m.ravel(), type=pa.float32()),
             "tpi_30m": pa.array(tpi_30m.ravel(), type=pa.float32()),
-            "slope": pa.array(slope.ravel(), type=pa.float32()),
-            "aspect": pa.array(aspect.ravel(), type=pa.float32()),
+            "slope": pa.array(slope.ravel(), type=pa.float16()),
+            "aspect": pa.array(aspect.ravel(), type=pa.float16()),
         }
     )
 
@@ -84,9 +84,8 @@ def generate_heightmap_pq() -> None:
         print("No new TIFF files to process.")
         return
 
-    print(f"Processing {len(jobs)} TIFF files...")
-
     with multiprocessing.Pool() as pool:
+        print(f"Processing {len(jobs)} TIFF files with {pool._processes} processes")
         pool.starmap(process_to_pq, jobs)
 
 
@@ -95,7 +94,7 @@ def process_to_pq(tiff_path: pathlib.Path, out_path: pathlib.Path):
 
     t0 = time.monotonic()
     tab = process_topo(tiff_path, name=tiff_path.name)
-    pq.write_table(tab, out_path, compression="snappy")
+    pq.write_table(tab, out_path, compression="zstd", use_dictionary=["name"])
     t1 = time.monotonic()
     print(f"Wrote {out_path} in {t1 - t0:.2f} seconds")
 
