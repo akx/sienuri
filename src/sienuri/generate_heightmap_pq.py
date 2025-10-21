@@ -94,7 +94,14 @@ def process_to_pq(tiff_path: pathlib.Path, out_path: pathlib.Path):
 
     t0 = time.monotonic()
     tab = process_topo(tiff_path, name=tiff_path.name)
-    pq.write_table(tab, out_path, compression="zstd", use_dictionary=["name"])
+    pq.write_table(
+        tab,
+        out_path,
+        compression="zstd",
+        use_dictionary=["name"],
+        row_group_size=16 * 1024 * 1024,
+        data_page_version="2.0",
+    )
     t1 = time.monotonic()
     print(f"Wrote {out_path} in {t1 - t0:.2f} seconds")
 
