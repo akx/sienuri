@@ -13,13 +13,14 @@ def download_forest_data():
     ap.add_argument("--out-dir", required=True, type=pathlib.Path)
     args = ap.parse_args()
     args.out_dir.mkdir(parents=True, exist_ok=True)
+    skipped = set()
+    downloaded = set()
     with closing(pycurl.Curl()) as c:
-        # https://avoin.metsakeskus.fi/aineistot/Metsavarakuviot/Karttalehti/MV_{x}.zip
         for parquet_path in args.parquet_dir.rglob("*.parquet"):
             url = f"https://avoin.metsakeskus.fi/aineistot/Metsavarakuviot/Karttalehti/MV_{parquet_path.stem}.zip"
             gpkg_filename = args.out_dir / f"MV_{parquet_path.stem}.gpkg"
             if gpkg_filename.exists():
-                print(f"Skipping existing {gpkg_filename}")
+                skipped.add(gpkg_filename)
                 continue
             buffer = BytesIO()
             c.setopt(c.URL, url)
@@ -31,6 +32,8 @@ def download_forest_data():
                     if name.endswith(".gpkg"):
                         print(f"Extracting {gpkg_filename} from {url}")
                         zf.extract(name, args.out_dir)
+                        downloaded.add(gpkg_filename)
+    print(f"Downloaded {len(downloaded)} files, skipped {len(skipped)} existing files.")
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ export const queries: Query[] = [
       return cleanSQL(`
       SELECT lon, lat, elevation, tpi_20m, aspect, slope
       FROM topo
-      LEFT JOIN stand ON topo.stand_id = stand.global_stand_id
+      LEFT JOIN stand ON topo.standid = stand.standid
       WHERE tpi_20m < -0.3 AND tpi_20m > -3
         AND elevation > 1
         AND (aspect >= 315 OR aspect <= 45)
