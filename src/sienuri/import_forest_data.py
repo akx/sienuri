@@ -100,8 +100,6 @@ def add_stand_id_to_topo(con: duckdb.DuckDBPyConnection):
     console.print("[cyan]Creating temporary join table (this may take several minutes)...[/cyan]")
     t0 = time.monotonic()
 
-    # Use a more efficient approach: create a temporary table with the join results
-    # then update the main table in one go
     con.execute("""
         CREATE TEMP TABLE topo_stand_mapping AS
         SELECT t.rowid as topo_rowid, s.standid

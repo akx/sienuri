@@ -4,11 +4,16 @@ import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MapRef } from "react-map-gl/maplibre";
-import Map, { Layer, Marker, Source } from "react-map-gl/maplibre";
+import Map, { Marker, Source } from "react-map-gl/maplibre";
 import useSWR from "swr";
 
 import { queries } from "./queries.ts";
 import { Bounds, StaticMarker, TopoPoint } from "./types.ts";
+import {
+  getAspectLayer,
+  getCircleLayer,
+  getHeatmapLayer,
+} from "./layerStyles.tsx";
 
 const initCoords = {
   longitude: 22.61,
@@ -36,7 +41,25 @@ const fetcher = async (url: string): Promise<TopoPoint[]> => {
   ) as TopoPoint[];
 };
 
-const darkModeAtom = atomWithStorage("darkMode", false);
+const enum LayerStyle {
+  Aspect = "aspect",
+  Circle = "circle",
+  Heatmap = "heatmap",
+}
+
+const darkModeAtom = atomWithStorage("darkMode", false, undefined, {
+  getOnInit: true,
+});
+
+const layerStyleAtom = atomWithStorage(
+  "layerStyle",
+  LayerStyle.Aspect,
+  undefined,
+  {
+    getOnInit: true,
+  },
+);
+
 const queryAtom = atomWithStorage("selectedQuery", "", undefined, {
   getOnInit: true,
 });
@@ -46,12 +69,17 @@ export function App() {
   const [bounds, setBounds] = useState<Bounds | null>(null);
   const [darkMode, setDarkMode] = useAtom(darkModeAtom);
   const [selectedQuery, setSelectedQuery] = useAtom(queryAtom);
+  const [layerStyle, setLayerStyle] = useAtom(layerStyleAtom);
   const mapStyle = darkMode
     ? "https://tiles.openfreemap.org/styles/dark"
     : "https://tiles.openfreemap.org/styles/liberty";
 
   useEffect(() => {
-    if (!selectedQuery) {
+    document.body.classList.toggle("dark", darkMode);
+  }, [darkMode]);
+  useEffect(() => {
+    if (!selectedQuery || !queries.some((q) => q.name === selectedQuery)) {
+      console.log("Setting default query:", queries[0]!.name);
       setSelectedQuery(queries[0]!.name);
     }
   }, [selectedQuery, setSelectedQuery]);
@@ -62,6 +90,7 @@ export function App() {
       const sql = q.getSQL(bounds);
       return `/api/query?${new URLSearchParams({ sql })}`;
     }
+    console.warn("Selected query not found:", selectedQuery);
     return null;
   };
 
@@ -111,61 +140,9 @@ export function App() {
         onMoveEnd={updateBounds}
       >
         <Source id="topo-points" type="geojson" data={geojson}>
-          <Layer
-            id="points"
-            type="symbol"
-            layout={{
-              "text-font": ["Noto Sans Regular"],
-              "text-field": "↑",
-              "text-size": [
-                "interpolate",
-                ["linear"],
-                ["zoom"],
-                10,
-                ["+", 4, ["*", ["get", "slope"], 0.3]],
-                14,
-                ["+", 6, ["*", ["get", "slope"], 0.5]],
-                16,
-                ["+", 8, ["*", ["get", "slope"], 0.8]],
-                18,
-                ["+", 10, ["*", ["get", "slope"], 1.2]],
-                20,
-                ["+", 14, ["*", ["get", "slope"], 2]],
-              ],
-              "text-rotate": ["get", "aspect"],
-              "text-allow-overlap": true,
-              "text-ignore-placement": true,
-            }}
-            paint={{
-              "text-color": [
-                "interpolate",
-                ["linear"],
-                ["get", "elevation"],
-                0,
-                "#0000ff",
-                20,
-                "#00ff00",
-                40,
-                "#ffff00",
-                60,
-                "#ff0000",
-              ],
-              "text-opacity": 1,
-              "text-halo-color": "#00000044",
-              "text-halo-width": [
-                "interpolate",
-                ["linear"],
-                ["zoom"],
-                10,
-                0,
-                16,
-                0,
-                20,
-                1.5,
-              ],
-              "text-halo-blur": 1,
-            }}
-          />
+          {layerStyle === LayerStyle.Aspect ? getAspectLayer() : null}
+          {layerStyle === LayerStyle.Circle ? getCircleLayer() : null}
+          {layerStyle === LayerStyle.Heatmap ? getHeatmapLayer() : null}
         </Source>
         {staticMarkers.map((marker, index) => (
           <Marker
@@ -186,14 +163,26 @@ export function App() {
           </Marker>
         ))}
       </Map>
-      <div className="absolute top-2 left-2 bg-white p-2 rounded shadow text-xs">
+      <div className="absolute top-2 left-2 bg-white p-2 rounded shadow text-xs dark:bg-gray-800 dark:text-white">
         <label className="flex items-center gap-1">
           <input
             type="checkbox"
             checked={darkMode}
             onChange={(e) => setDarkMode(e.target.checked)}
           />
-          Dark Map
+          Dark
+        </label>
+        <label className="flex items-center gap-1 mt-2">
+          Layer Style:
+          <select
+            value={layerStyle}
+            onChange={(e) => setLayerStyle(e.target.value as LayerStyle)}
+            className="border border-gray-300 rounded p-1"
+          >
+            <option value={LayerStyle.Aspect}>Aspect</option>
+            <option value={LayerStyle.Circle}>Circle</option>
+            <option value={LayerStyle.Heatmap}>Heatmap</option>
+          </select>
         </label>
         <label className="flex items-center gap-1 mt-2">
           Query:
