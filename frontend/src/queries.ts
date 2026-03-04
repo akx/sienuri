@@ -25,6 +25,25 @@ export const queries: Query[] = [
     `);
     },
   },
+  {
+    name: "Boletus edulis (BETA)",
+    getSQL: (bounds) => {
+      const { west, south, east, north } = bounds;
+      return cleanSQL(`
+      SELECT lon, lat, elevation, tpi_20m, aspect, slope
+      FROM topo
+      LEFT JOIN stand ON topo.standid = stand.standid
+      WHERE
+        lon BETWEEN ${west} AND ${east} AND lat BETWEEN ${south} AND ${north}
+        AND tpi_20m BETWEEN -0.5 AND 2
+        AND elevation > 1
+        AND slope BETWEEN 2 AND 20
+        AND stand.maintreespecies IN (1,2,3,4)
+      ORDER BY RANDOM()
+      LIMIT 20000
+    `);
+    },
+  },
   // {
   //   name: "Laaksoli",
   //   getSQL: (bounds) => {
