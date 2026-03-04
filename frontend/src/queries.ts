@@ -26,7 +26,7 @@ export const queries: Query[] = [
     },
   },
   {
-    name: "Boletus edulis",
+    name: "Boletus edulis (BETA)",
     getSQL: (bounds) => {
       const { west, south, east, north } = bounds;
       return cleanSQL(`
