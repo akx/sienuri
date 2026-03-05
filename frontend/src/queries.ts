@@ -44,6 +44,26 @@ export const queries: Query[] = [
     `);
     },
   },
+  {
+    name: "Solanum tuberosum, potato (BETA)",
+    getSQL: (bounds) => {
+      const { west, south, east, north } = bounds;
+      return cleanSQL(`
+      SELECT lon, lat, elevation, tpi_20m, aspect, slope
+      FROM topo
+      LEFT JOIN stand ON topo.standid = stand.standid
+      WHERE
+        lon BETWEEN ${west} AND ${east} AND lat BETWEEN ${south} AND ${north}
+        AND tpi_20m BETWEEN -2 AND 0
+        AND elevation > 1
+        AND slope < 10
+        AND (aspect BETWEEN 45 AND 315)
+        AND stand.maintreespecies = 1
+      ORDER BY RANDOM()
+      LIMIT 20000
+    `);
+    },
+  },
   // {
   //   name: "Laaksoli",
   //   getSQL: (bounds) => {
