@@ -3,7 +3,7 @@
 topo.duckdb:
 	uv run -m sienuri.generate_heightmap_pq --input-dir data/korkeusmalli/hila_2m/ --output-dir pq
 	uv run -m sienuri.download_forest_data --parquet-dir=pq --out-dir=forest
-	duckdb $@ -c "LOAD spatial; CREATE TABLE topo AS SELECT * FROM read_parquet('pq/*.parquet');"
+	duckdb $@ -c "INSTALL spatial; LOAD spatial; CREATE TABLE topo AS SELECT * FROM read_parquet('pq/*.parquet');"
 	uv run -m sienuri.import_forest_data --forest-dir forest/ --database $@
 
 
